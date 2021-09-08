@@ -5,8 +5,8 @@ from django.db import models
 
 class Game(models.Model):
     id = models.IntegerField(primary_key=True)
-    thumbnail = models.CharField(max_length=100)
-    image = models.CharField(max_length=100)
+    thumbnail = models.CharField(max_length=1000)
+    image = models.CharField(max_length=1000)
     name = models.CharField(max_length=100)  # primary
     alternate = models.TextField()  # 리스트
     description = models.TextField()
