@@ -8,7 +8,7 @@ class Game(models.Model):
     thumbnail = models.CharField(max_length=1000)
     image = models.CharField(max_length=1000)
     name = models.CharField(max_length=100)  # primary
-    alternate = models.TextField()  # 리스트
+    name_kor = models.CharField(max_length=100)  # 리스트
     description = models.TextField()
     year_published = models.IntegerField()
     minPlayers = models.IntegerField()
