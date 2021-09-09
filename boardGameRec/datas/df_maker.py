@@ -31,47 +31,56 @@ def make_dataframe():
         'publisher': ['list', 'boardgamepublisher']
     }
 
-    for id in game_ids[:10]:
+    for id in game_ids:
         url = f'https://www.boardgamegeek.com/xmlapi/boardgame/{id}'
-        u = urlopen(url).read()
-        doc = xmltodict.parse(u)
-        game = doc['boardgames']['boardgame']
-        
-        data = {
-            'id': id,
-            'thumbnail': '',
-            'image': '',
-            'name': fetch_name(game['name']),
-            'nameKor': fetch_korean_name(game['name']),
-            'description': '',
-            'yearPublished': '',
-            'minPlayers': '',
-            'maxPlayers': '',
-            'minPlayTime': '',
-            'maxPlayTime': '',
-            'minAge': '',
-            'category': '',
-            'playType': '',
-            'series': '',
-            'designer': '',
-            'artist': '',
-            'publisher': ''
-        }
+        try:
+            u = urlopen(url).read()
+            doc = xmltodict.parse(u)
+            game = doc['boardgames']['boardgame']
 
-        # try 문을 사용, api에 해당 항목이 있다면 data 추가
-        for key, val in columns_check.items():
-            try:
-                if type(val) is str:
-                    data[key] = game[val]
-                elif type(val) is list:
-                    if val[0] == 'int':
-                        data[key] = int(game[val[1]])
-                    else:
-                        data[key] = convert_to_list(game[val[1]])
-            except:
-                pass
+            data = {
+                'id': id,
+                'thumbnail': '',
+                'image': '',
+                'name': fetch_name(game['name']),
+                'nameKor': fetch_korean_name(game['name']),
+                'description': '',
+                'yearPublished': '',
+                'minPlayers': '',
+                'maxPlayers': '',
+                'minPlayTime': '',
+                'maxPlayTime': '',
+                'minAge': '',
+                'category': '',
+                'playType': '',
+                'series': '',
+                'designer': '',
+                'artist': '',
+                'publisher': ''
+            }
 
-        games.append(data)
+            # try 문을 사용, api에 해당 항목이 있다면 data 추가
+            for key, val in columns_check.items():
+                try:
+                    if type(val) is str:
+                        data[key] = game[val]
+                    elif type(val) is list:
+                        if val[0] == 'int':
+                            data[key] = int(game[val[1]])
+                        else:
+                            data[key] = convert_to_list(game[val[1]])
+                except:
+                    pass
+
+            games.append(data)
+        except:
+            pass
+
+    columns = ['id', 'thumbnail', 'image', 'name', 'nameKor', 'description', 'yearPublished', 'minPlayers', 'maxPlayers',
+               'minPlayTime', 'maxPlayTime', 'minAge', 'category', 'playType', 'series', 'designer', 'artist', 'publisher']
+    df = pd.DataFrame(games, columns=columns)
+
+    df.to_csv('data.csv', sep=',', na_rep='', encoding='utf-8-sig')
 
 
 def fetch_game_ids():
