@@ -77,8 +77,15 @@ WSGI_APPLICATION = 'recommend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'ssafy-a404-recommend',
+        'USER': 'a404',
+        'PASSWORD': 'ssafya404',
+        'HOST': 'ssafy-a404-recommend.cigtiqxxmlgt.us-east-2.rds.amazonaws.com',
+        'PORT': '3306',
+        'OPTIONS': {
+            'init_command': 'SET sql_mode="STRICT_TRANS_TABLES"'
+        }
     }
 }
 
