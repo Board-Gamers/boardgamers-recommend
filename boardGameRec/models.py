@@ -19,7 +19,7 @@ class Game(models.Model):
     category = models.TextField()  # 리스트
     playType = models.TextField()  # 리스트 # boardgamemechanic
     series = models.TextField()  # 리스트 # boardgameimplementation
-    designer = models.CharField(max_length=100)  # boardgamedesigner
+    designer = models.TextField() # 리스트  # boardgamedesigner
     artist = models.TextField()  # 리스트 # boardgameartist
     publisher = models.TextField()  # 리스트 # boardgamepublisher
     usersRated = models.IntegerField()
