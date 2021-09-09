@@ -1,7 +1,9 @@
 import re
 import sys
-import xmltodict
+import xmltodict    
+import requests
 import pandas as pd
+from bs4 import BeautifulSoup
 from urllib.request import urlopen
 
 
@@ -70,7 +72,7 @@ def make_dataframe():
                         data[key] = convert_to_list(game[val[1]])
             except:
                 pass
-
+        
         games.append(data)
 
 
@@ -84,18 +86,31 @@ def fetch_game_ids():
     return rows
 
 
-def fetch_name(dict):
-    if type(dict) is list:
-        return dict[0]['#text']
-    return dict['#text']
+def fetch_name(names):
+    if type(names) is list:
+        return names[0]['#text']
+    return names['#text']
 
 
 def fetch_korean_name(names):
     try:
-        for i in names:
+        for i in names[1:]:
             name = i['#text']
             if isHangul(name):
                 return name
+    except:
+        pass
+
+    url = "http://boardlife.co.kr/game_rank.php?search="
+    name_eng = fetch_name(names).replace(' ', '+')
+    url += name_eng
+    
+    selector = 'body > table tr:nth-child(2) > td > table tr:nth-child(1) > .ellip > a'
+
+    b_soup = BeautifulSoup(requests.get(url).text, "html.parser")
+    try:
+        name = b_soup.select(selector)[0].text
+        return name
     except:
         pass
 
