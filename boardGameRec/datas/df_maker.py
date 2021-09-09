@@ -1,6 +1,6 @@
 import re
 import sys
-import xmltodict    
+import xmltodict
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -35,7 +35,6 @@ def make_dataframe():
 
     for id in game_ids:
         url = f'https://www.boardgamegeek.com/xmlapi/boardgame/{id}'
-<<<<<<< HEAD
         try:
             u = urlopen(url).read()
             doc = xmltodict.parse(u)
@@ -84,47 +83,6 @@ def make_dataframe():
     df = pd.DataFrame(games, columns=columns)
 
     df.to_csv('data.csv', sep=',', na_rep='', encoding='utf-8-sig')
-=======
-        u = urlopen(url).read()
-        doc = xmltodict.parse(u)
-        game = doc['boardgames']['boardgame']
-        
-        data = {
-            'id': id,
-            'thumbnail': '',
-            'image': '',
-            'name': fetch_name(game['name']),
-            'nameKor': fetch_korean_name(game['name']),
-            'description': '',
-            'yearPublished': '',
-            'minPlayers': '',
-            'maxPlayers': '',
-            'minPlayTime': '',
-            'maxPlayTime': '',
-            'minAge': '',
-            'category': '',
-            'playType': '',
-            'series': '',
-            'designer': '',
-            'artist': '',
-            'publisher': ''
-        }
-
-        # try 문을 사용, api에 해당 항목이 있다면 data 추가
-        for key, val in columns_check.items():
-            try:
-                if type(val) is str:
-                    data[key] = game[val]
-                elif type(val) is list:
-                    if val[0] == 'int':
-                        data[key] = int(game[val[1]])
-                    else:
-                        data[key] = convert_to_list(game[val[1]])
-            except:
-                pass
-        
-        games.append(data)
->>>>>>> 2873e3d59adf3694acd74f6db9e6d3cf840b26d6
 
 
 def fetch_game_ids():
@@ -155,7 +113,7 @@ def fetch_korean_name(names):
     url = "http://boardlife.co.kr/game_rank.php?search="
     name_eng = fetch_name(names).replace(' ', '+')
     url += name_eng
-    
+
     selector = 'body > table tr:nth-child(2) > td > table tr:nth-child(1) > .ellip > a'
 
     b_soup = BeautifulSoup(requests.get(url).text, "html.parser")
