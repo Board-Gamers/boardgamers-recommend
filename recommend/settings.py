@@ -78,10 +78,10 @@ WSGI_APPLICATION = 'recommend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'ssafy-a404-recommend',
-        'USER': 'a404',
-        'PASSWORD': 'ssafya404',
-        'HOST': 'ssafy-a404-recommend.cigtiqxxmlgt.us-east-2.rds.amazonaws.com',
+        'NAME': 'boardgamers',
+        'USER': 'ssafy',
+        'PASSWORD': 'qweasd123*',
+        'HOST': 'j5a404.p.ssafy.io',
         'PORT': '3306',
         'OPTIONS': {
             'init_command': 'SET sql_mode="STRICT_TRANS_TABLES"'
