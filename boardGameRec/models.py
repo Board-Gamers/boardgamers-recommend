@@ -8,9 +8,9 @@ class Game(models.Model):
     thumbnail = models.CharField(max_length=1000)
     image = models.CharField(max_length=1000)
     name = models.CharField(max_length=100)  # primary
-    name_kor = models.CharField(max_length=100)  # 리스트
+    nameKor = models.CharField(max_length=100)  # 리스트
     description = models.TextField()
-    year_published = models.IntegerField()
+    yearPublished = models.IntegerField()
     minPlayers = models.IntegerField()
     maxPlayers = models.IntegerField()
     minPlayTime = models.IntegerField()
@@ -31,7 +31,7 @@ class Review(models.Model):
     user = models.CharField(max_length=50)
     rating = models.FloatField()
     comment = models.TextField()
-    # gameId = models.ForeignKey(Game, on_delete=models.CASCADE)
+    gameId = models.ForeignKey(Game, on_delete=models.CASCADE)
     gameName = models.CharField(max_length=100)
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)
