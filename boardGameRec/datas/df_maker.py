@@ -19,14 +19,14 @@ def make_dataframe():
         'thumbnail': 'thumbnail',
         'image': 'image',
         'description': 'description',
-        'yearPublished': ['int', 'yearpublished'],
-        'minPlayers': ['int', 'maxplayers'],
-        'maxPlayers': ['int', 'maxplayers'],
-        'minPlayTime': ['int', 'minplaytime'],
-        'maxPlayTime': ['int', 'maxplaytime'],
-        'minAge': ['int', 'age'],
+        'year_published': ['int', 'yearpublished'],
+        'min_players': ['int', 'maxplayers'],
+        'max_players': ['int', 'maxplayers'],
+        'min_play_time': ['int', 'minplaytime'],
+        'max_play_time': ['int', 'maxplaytime'],
+        'min_age': ['int', 'age'],
         'category': ['list', 'boardgamecategory'],
-        'playType': ['list', 'boardgamemechanic'],
+        'play_type': ['list', 'boardgamemechanic'],
         'series': ['list', 'boardgameimplementation'],
         'designer': ['list', 'boardgamedesigner'],
         'artist': ['list', 'boardgameartist'],
@@ -47,14 +47,14 @@ def make_dataframe():
                 'name': fetch_name(game['name']),
                 'nameKor': fetch_korean_name(game['name']),
                 'description': '',
-                'yearPublished': '',
-                'minPlayers': '',
-                'maxPlayers': '',
-                'minPlayTime': '',
-                'maxPlayTime': '',
-                'minAge': '',
+                'year_published': '',
+                'min_players': '',
+                'max_players': '',
+                'min_play_time': '',
+                'max_play_time': '',
+                'min_age': '',
                 'category': '',
-                'playType': '',
+                'play_type': '',
                 'series': '',
                 'designer': '',
                 'artist': '',
@@ -78,8 +78,8 @@ def make_dataframe():
         except:
             pass
 
-    columns = ['id', 'thumbnail', 'image', 'name', 'nameKor', 'description', 'yearPublished', 'minPlayers', 'maxPlayers',
-               'minPlayTime', 'maxPlayTime', 'minAge', 'category', 'playType', 'series', 'designer', 'artist', 'publisher']
+    columns = ['id', 'thumbnail', 'image', 'name', 'nameKor', 'description', 'year_published', 'min_players', 'max_players',
+               'min_play_time', 'max_play_time', 'min_age', 'category', 'play_type', 'series', 'designer', 'artist', 'publisher']
     df = pd.DataFrame(games, columns=columns)
 
     df.to_csv('data.csv', sep=',', na_rep='', encoding='utf-8-sig')
