@@ -119,7 +119,7 @@ def fetch_korean_name(names):
     b_soup = BeautifulSoup(requests.get(url).text, "html.parser")
     try:
         name = b_soup.select(selector)[0].text
-        return name
+        return name.strip()
     except:
         pass
 
