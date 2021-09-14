@@ -7,9 +7,6 @@ from bs4 import BeautifulSoup
 from urllib.request import urlopen
 
 
-from pprint import pprint
-
-
 def make_dataframe():
     game_ids = fetch_game_ids()
     games = []
