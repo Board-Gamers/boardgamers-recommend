@@ -42,7 +42,7 @@ def make_dataframe():
                 'thumbnail': '',
                 'image': '',
                 'name': fetch_name(game['name']),
-                'nameKor': fetch_korean_name(game['name']),
+                'name_kor': fetch_korean_name(game['name']),
                 'description': '',
                 'year_published': '',
                 'min_players': '',
@@ -75,7 +75,7 @@ def make_dataframe():
         except:
             pass
 
-    columns = ['id', 'thumbnail', 'image', 'name', 'nameKor', 'description', 'year_published', 'min_players', 'max_players',
+    columns = ['id', 'thumbnail', 'image', 'name', 'name_kor', 'description', 'year_published', 'min_players', 'max_players',
                'min_play_time', 'max_play_time', 'min_age', 'category', 'play_type', 'series', 'designer', 'artist', 'publisher']
     df = pd.DataFrame(games, columns=columns)
 
