@@ -21,7 +21,7 @@ conn_alchemy =  engine.connect()
 def save_sql():
     with open('boardGameRec/datas/user_ids.json') as json_file:
         ids_json = json.load(json_file)['user_id']
-    df = pd.read_csv('boardGameRec/datas/test_reviews.csv', encoding='utf-8')
+    df = pd.read_csv('boardGameRec/datas/reviews.csv', encoding='utf-8')
     df.columns = ['id', 'user_id', 'rating', 'comment', 'game_id', 'game_name']
     
     gap = 10000
@@ -35,26 +35,6 @@ def save_sql():
         except:
             df.at[idx, 'user_id'] = 0
 
-
-def create_ids_json():
-    query = 'SELECT * FROM boardgamers.review_id'
-    sql = pd.read_sql(query, conn_alchemy)
-    sql.set_index('user').to_json('boardGameRec/datas/user_ids.json')
-    
-    from pprint import pprint
-
-    with open('boardGameRec/datas/user_ids.json') as json_r:
-        ids_json = json.load(json_r)['user_id']
-    new_json = {}
-    for key, val in ids_json.items():
-        if key[0] not in new_json:
-            new_json[key[0]] = {}
-        if key[1] not in new_json[key[0]]:
-            new_json[key[0]][key[1]] = {}
-        new_json[key[0]][key[1]][key[2:]] = val
-    with open('boardGameRec/datas/user_ids_search.json', 'w') as json_w:
-        json.dump(new_json, json_w)
-    
 
 if __name__ == '__main__':
     save_sql()
