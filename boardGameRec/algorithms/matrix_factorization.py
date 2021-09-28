@@ -5,23 +5,16 @@ from sqlalchemy import create_engine
 from scipy.sparse import csr_matrix
 
 
-# password 보안용
-config = Config(RepositoryEnv('boardGameRec/algorithms/.env'))
-SQL_PWD = config('MYSQL_PASSWORD')
-
-# SQL 서버와 연결
-engine = create_engine(f'mysql://ssafy:{SQL_PWD}@j5a404.p.ssafy.io/boardgamers')
-conn_alchemy =  engine.connect()
-
-
 class MatirxFactorization:
 
-    def __init__(self, R, k, learning_rate, iteration, save_size):
+    def __init__(self, R, k, learning_rate, iteration, save_size, engine):
         self.R = R
+        self.csr = csr_matrix(R)
         self.k = k
         self.learning_rate = learning_rate
         self.iteration = iteration
         self.save_size = save_size
+        self.engine = engine
 
 
     def matrix_factorization(self):
@@ -39,7 +32,7 @@ class MatirxFactorization:
         bu = np.zeros(user_count)
         bi = np.zeros(item_count)
 
-        csr = csr_matrix(self.R.fillna(0))
+        csr = self.csr
         ratings = csr.data
         games = csr.indices
         for iter in range(self.iteration):
@@ -58,10 +51,9 @@ class MatirxFactorization:
                     Q[games[j], :] -= delta_Q
                     bi[games[j]] -= delta_bi
 
-            print(iter, self.cost(P, Q, bu, bi))
+            print(iter, self.cost(P.dot(Q.T) + bu[:, np.newaxis] + bi[np.newaxis:, ]))
         
         return P.dot(Q.T) + bu[:, np.newaxis] + bi[np.newaxis:, ]
-
 
 
     def prediction(self, P, Q, bu, bi):
@@ -74,12 +66,12 @@ class MatirxFactorization:
         return weight_delta, bias_delta
 
 
-    def cost(self, P, Q, bu, bi):
+    def cost(self, prediction):
         R = self.R.to_numpy()
         xi, yi = R.nonzero()
         cost = 0
         for x, y in zip(xi, yi):
-            cost += pow(R[x, y] - self.prediction(P[x, :], Q[y, :], bu[x], bi[y]), 2)
+            cost += pow(R[x, y] - prediction[x, y], 2)
         return np.sqrt(cost/len(xi))
 
 
@@ -89,21 +81,40 @@ class MatirxFactorization:
 
     def result_to_sql(self, result_df):
         result_to_save = []
-        for i in range(self.R.index.size):
+
+        # BoardGameGeek 데이터가 아닌 실제 유저 id는 1000000부터 시작하므로 그 인덱스를 찾는다
+        user_start = 1000000
+        while True:
+            try:
+                user_index = self.R.index.tolist().index(user_start)
+                break
+            except:
+                user_start += 1
+
+        for i in range(user_index, self.R.index.size):
             user_result = result_df.iloc[i]
             user_id = self.R.index[i]
+            games_rated = []
+            for j in range(self.csr.indptr[i], self.csr.indptr[i+1]):
+                games_rated.append(self.R.columns[self.csr.indices[j]])
 
             user_result = user_result.sort_values(ascending=False)
             game_ids = user_result.keys()
             ratings = user_result.values
-            for j in range(self.save_size):
-                result_to_save.append([user_id, game_ids[j], j+1, ratings[j]])
+            saved = 0
+            game_ids_idx = 0
+            while saved < self.save_size:
+                save_game_id = game_ids[game_ids_idx]
+                if save_game_id not in games_rated:
+                    result_to_save.append([user_id, game_ids[game_ids_idx], game_ids_idx+1, ratings[game_ids_idx]])
+                    saved += 1
+                game_ids_idx += 1
 
         df_to_save = pd.DataFrame(result_to_save, columns=['user_id', 'game_id', 'rank', 'predicted_rating'])
 
         df_to_save.to_sql(
             name='recommend_result',
-            con=engine,
+            con=self.engine,
             if_exists='append',
             index=False
         )
@@ -114,8 +125,8 @@ class MatirxFactorization:
 game_count : 평점 수를 기준으로 상위 x개만 알고리즘 실행
 user_rate_limit : 해당 개수 이하의 평점을 매긴 user는 제외
 '''
-def make_dataframe(game_count, user_rate_limit):
-    query = 'SELECT * FROM boardgamers.recommend_review LIMIT 10000;'
+def make_dataframe(game_count, user_rate_limit, con):
+    query = 'SELECT * FROM boardgamers.recommend_review;'
     data = pd.read_sql(query, conn_alchemy)
 
     user_rate_count = data.groupby(['user_id']).count().sort_values('id', ascending=False)
@@ -149,6 +160,14 @@ def make_dataframe(game_count, user_rate_limit):
 
 
 if __name__ == '__main__':
-    csr = make_dataframe(100, 0)
-    mf = MatirxFactorization(csr, 3, 0.005, 100, 20)
+    # password 보안용
+    config = Config(RepositoryEnv('boardGameRec/algorithms/.env'))
+    SQL_PWD = config('MYSQL_PASSWORD')
+
+    # SQL 서버와 연결
+    engine = create_engine(f'mysql://ssafy:{SQL_PWD}@j5a404.p.ssafy.io/boardgamers')
+    conn_alchemy =  engine.connect()
+
+    csr = make_dataframe(1000, 0, conn_alchemy)
+    mf = MatirxFactorization(csr, 3, 0.005, 5, 20, engine)
     mf.matrix_factorization()
