@@ -127,7 +127,7 @@ user_rate_limit : 해당 개수 이하의 평점을 매긴 user는 제외
 '''
 def make_dataframe(game_count, user_rate_limit, con):
     query = 'SELECT * FROM boardgamers.recommend_review;'
-    data = pd.read_sql(query, conn_alchemy)
+    data = pd.read_sql(query, con)
 
     user_rate_count = data.groupby(['user_id']).count().sort_values('id', ascending=False)
     if user_rate_limit:
@@ -159,7 +159,7 @@ def make_dataframe(game_count, user_rate_limit, con):
     return complete_df.fillna(0)
 
 
-if __name__ == '__main__':
+def update_main():
     # password 보안용
     config = Config(RepositoryEnv('boardGameRec/algorithms/.env'))
     SQL_PWD = config('MYSQL_PASSWORD')
@@ -169,5 +169,5 @@ if __name__ == '__main__':
     conn_alchemy =  engine.connect()
 
     csr = make_dataframe(1000, 0, conn_alchemy)
-    mf = MatirxFactorization(csr, 3, 0.005, 5, 20, engine)
+    mf = MatirxFactorization(csr, k=9, learning_rate=0.005, iteration=5, save_size=20, engine=engine)
     mf.matrix_factorization()
