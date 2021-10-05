@@ -128,7 +128,7 @@ game_count : 평점 수를 기준으로 상위 x개만 알고리즘 실행
 user_rate_limit : 해당 개수 이하의 평점을 매긴 user는 제외
 '''
 def make_dataframe(game_count, user_rate_limit, con):
-    query = 'SELECT * FROM boardgamers.recommend_review LIMIT 140000, 20000;'
+    query = 'SELECT * FROM boardgamers.recommend_review;'
     data = pd.read_sql(query, con)
 
     user_rate_count = data.groupby(['user_id']).count().sort_values('id', ascending=False)
@@ -161,8 +161,16 @@ def make_dataframe(game_count, user_rate_limit, con):
     return complete_df.fillna(0)
 
 
-def update_main():
-    # password 보안용
+def update_main(k, learning_rate, iteration, save_size):
+    '''
+    parameters
+    - k : latent factors 수
+    - learning_rate
+    - iteration : 학습 반복 횟수
+    - save_size : 예상 평점 상위 몇 개 저장할지
+    '''
+
+    ## password 보안용
     # config = Config(RepositoryEnv('boardGameRec/algorithms/.env'))
     # SQL_PWD = config('MYSQL_PASSWORD')
     SQL_PWD = 'qweasd123*'
@@ -171,6 +179,6 @@ def update_main():
     engine = create_engine(f'mysql://ssafy:{SQL_PWD}@j5a404.p.ssafy.io/boardgamers')
     conn_alchemy =  engine.connect()
 
-    csr = make_dataframe(1000, 0, conn_alchemy)
-    mf = MatirxFactorization(csr, k=9, learning_rate=0.005, iteration=5, save_size=20, engine=engine)
+    ratings = make_dataframe(1000, 0, conn_alchemy)
+    mf = MatirxFactorization(ratings, k=k, learning_rate=learning_rate, iteration=iteration, save_size=save_size, engine=engine)
     mf.matrix_factorization()
