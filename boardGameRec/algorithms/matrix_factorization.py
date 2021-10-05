@@ -161,7 +161,7 @@ def make_dataframe(game_count, user_rate_limit, con):
 
 def update_main():
     # password 보안용
-    config = Config(RepositoryEnv('boardGameRec/algorithms/.env'))
+    # config = Config(RepositoryEnv('boardGameRec/algorithms/.env'))
     # SQL_PWD = config('MYSQL_PASSWORD')
     SQL_PWD = 'qweasd123*'
 
