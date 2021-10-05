@@ -162,7 +162,8 @@ def make_dataframe(game_count, user_rate_limit, con):
 def update_main():
     # password 보안용
     config = Config(RepositoryEnv('boardGameRec/algorithms/.env'))
-    SQL_PWD = config('MYSQL_PASSWORD')
+    # SQL_PWD = config('MYSQL_PASSWORD')
+    SQL_PWD = 'qweasd123*'
 
     # SQL 서버와 연결
     engine = create_engine(f'mysql://ssafy:{SQL_PWD}@j5a404.p.ssafy.io/boardgamers')
