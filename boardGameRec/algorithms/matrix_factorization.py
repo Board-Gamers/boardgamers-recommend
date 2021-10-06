@@ -18,7 +18,7 @@ class MatirxFactorization:
         # SQL 서버와 연결
         self.engine = create_engine(f'mysql://ssafy:{SQL_PWD}@j5a404.p.ssafy.io/boardgamers')
         self.con = self.engine.connect()
-        self.csr, self.matrix = self.make_csr(game_count)
+        self.csr, self.users, self.games = self.make_csr(game_count)
         self.k = k
         self.learning_rate = learning_rate
         self.iteration = iteration
@@ -57,7 +57,7 @@ class MatirxFactorization:
                     col.append(game_rate_count_sorted.index(game_id))
                     rating.append(getattr(row, 'rating'))
                     current_user_games.append(game_id)
-        return csr_matrix((rating, (rows, col))), (users, game_rate_count_sorted)
+        return csr_matrix((rating, (rows, col))), users, game_rate_count_sorted
 
 
     def matrix_factorization(self):
@@ -65,7 +65,7 @@ class MatirxFactorization:
 
 
     def gradient_descent(self):
-        user_count, item_count = len(self.matrix[0]), len(self.matrix[1])
+        user_count, item_count = len(self.users), len(self.games)
         # count*k size의 행렬을 만들어준다
         P = np.random.normal(size=(user_count, self.k))
         Q = np.random.normal(size=(item_count, self.k))
@@ -96,6 +96,7 @@ class MatirxFactorization:
             # print(iter, self.cost(P.dot(Q.T) + bu[:, np.newaxis] + bi[np.newaxis:, ]))
         
         self.result_to_sql(P, Q, bu, bi)
+        self.game_latent_factors_to_sql(Q)
 
 
     def prediction(self, P, Q, bu, bi):
@@ -124,20 +125,20 @@ class MatirxFactorization:
         user_start = 1000000
         while True:
             try:
-                user_index = self.matrix[0].index(user_start)
+                user_index = self.users.index(user_start)
                 break
             except:
                 user_start += 1
 
-        for i in range(user_index, len(self.matrix[0])):
+        for i in range(user_index, len(self.users)):
             user_result = self.prediction(P[i, :], Q, bu[i], bi)
-            user_id = self.matrix[0][i]
+            user_id = self.users[i]
             
             games_rated = []
             for j in range(self.csr.indptr[i], self.csr.indptr[i+1]):
-                games_rated.append(self.matrix[1][self.csr.indices[j]])
+                games_rated.append(self.games[self.csr.indices[j]])
 
-            user_result = pd.Series(user_result, self.matrix[1]).sort_values(ascending=False)
+            user_result = pd.Series(user_result, self.games).sort_values(ascending=False)
             
             game_ids = user_result.keys()
             ratings = user_result.values
@@ -162,6 +163,23 @@ class MatirxFactorization:
         )
 
 
+    def game_latent_factors_to_sql(self, Q):
+        weights_to_save = []
+        for i in range(len(self.games)):
+            for j in range(self.k):
+                weights_to_save.append([self.games[i], j, Q[i][j]])
+
+        df_to_save = pd.DataFrame(weights_to_save, columns=['game_id', 'k_num', 'weight'])
+
+        self.con.execute(text('TRUNCATE boardgamers.recommend_game_latent_factor'))
+        df_to_save.to_sql(
+            name='recommend_game_latent_factor',
+            con=self.engine,
+            if_exists='append',
+            index=False
+        )
+
+
 def update_main(game_count, k, learning_rate, iteration, save_size):
     '''
     parameters
@@ -175,5 +193,5 @@ def update_main(game_count, k, learning_rate, iteration, save_size):
 
 
 if __name__ == '__main__':
-    update_main(game_count=2000, k=12, learning_rate=0.005, iteration=300, save_size=20)
+    update_main(game_count=1000, k=3, learning_rate=0.005, iteration=5, save_size=20)
     

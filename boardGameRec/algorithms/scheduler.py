@@ -4,7 +4,7 @@ from matrix_factorization import update_main
 
 
 def job():
-    update_main(game_count=2000, k=12, learning_rate=0.005, iteration=300, save_size=20)
+    update_main(game_count=2000, k=12, learning_rate=0.005, iteration=3000, save_size=20)
 
 
 if __name__ == '__main__':
