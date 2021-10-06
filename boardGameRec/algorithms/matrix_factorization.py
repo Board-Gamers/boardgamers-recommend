@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from decouple import Config, RepositoryEnv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from scipy.sparse import csr_matrix
 import pymysql
 pymysql.install_as_MySQLdb()
@@ -9,21 +9,59 @@ pymysql.install_as_MySQLdb()
 
 class MatirxFactorization:
 
-    def __init__(self, csr, k, learning_rate, iteration, save_size, engine, matrix):
-        self.csr = csr
+    def __init__(self, game_count, k, learning_rate, iteration, save_size):
+        ## password 보안용
+        # config = Config(RepositoryEnv('boardGameRec/algorithms/.env'))
+        # SQL_PWD = config('MYSQL_PASSWORD')
+        SQL_PWD = 'qweasd123*'
+
+        # SQL 서버와 연결
+        self.engine = create_engine(f'mysql://ssafy:{SQL_PWD}@j5a404.p.ssafy.io/boardgamers')
+        self.con = self.engine.connect()
+        self.csr, self.matrix = self.make_csr(game_count)
         self.k = k
         self.learning_rate = learning_rate
         self.iteration = iteration
         self.save_size = save_size
-        self.engine = engine
-        self.matrix = matrix
+
+
+    '''
+    일부 데이터만 활용하는 DataFrame 제작
+    game_count : 평점 수를 기준으로 상위 x개만 알고리즘 실행
+    '''
+    def make_csr(self, game_count):
+        self.con.execute(text('DELETE FROM boardgamers.recommend_review WHERE user_id >= 1000000;'))
+        self.con.execute(text('INSERT INTO boardgamers.recommend_review (user_id, game_id, rating, from_bg) SELECT user_id + 1000000, game_id, rating, true FROM boardgamers.review'))
+        query = 'SELECT * FROM boardgamers.recommend_review;'
+        data = pd.read_sql(query, self.con)
+        
+        users = data.groupby(['user_id']).count().index.to_list()
+        
+        game_rate_count = data.groupby(['game_id']).count()
+        game_rate_count_sorted = game_rate_count.sort_values('id', ascending=False).index[:game_count].to_list()
+
+        rows, col, rating = [], [], []
+        current_user = -2
+        for row in data.itertuples():
+            if getattr(row, 'user_id') != current_user:
+                current_user = getattr(row, 'user_id')
+                current_user_games = []
+            game_id = getattr(row, 'game_id')
+            if game_id in game_rate_count_sorted:
+                # 한 유저가 같은 게임에 평점을 중복으로 등록한 경우 최근 것으로 덮어 씌운다
+                if game_id in current_user_games:
+                    idx_from_back = current_user_games.index(game_id) - len(current_user_games)
+                    rating[idx_from_back] = getattr(row, 'rating')
+                else:
+                    rows.append(users.index(getattr(row, 'user_id')))
+                    col.append(game_rate_count_sorted.index(game_id))
+                    rating.append(getattr(row, 'rating'))
+                    current_user_games.append(game_id)
+        return csr_matrix((rating, (rows, col))), (users, game_rate_count_sorted)
 
 
     def matrix_factorization(self):
         self.gradient_descent()
-        # result = self.gradient_descent()
-        # result_df = pd.DataFrame(result, index=self.R.index, columns=self.R.columns)
-        # self.result_to_sql(result_df)
 
 
     def gradient_descent(self):
@@ -55,12 +93,9 @@ class MatirxFactorization:
                     bi[games[j]] -= delta_bi
 
             print(iter)
+            # print(iter, self.cost(P.dot(Q.T) + bu[:, np.newaxis] + bi[np.newaxis:, ]))
         
         self.result_to_sql(P, Q, bu, bi)
-
-        #     print(iter, self.cost(P.dot(Q.T) + bu[:, np.newaxis] + bi[np.newaxis:, ]))
-
-        # return P.dot(Q.T) + bu[:, np.newaxis] + bi[np.newaxis:, ]
 
 
     def prediction(self, P, Q, bu, bi):
@@ -112,12 +147,13 @@ class MatirxFactorization:
             while saved < self.save_size:
                 save_game_id = game_ids[game_ids_idx]
                 if save_game_id not in games_rated:
-                    result_to_save.append([user_id, game_ids[game_ids_idx], game_ids_idx+1, ratings[game_ids_idx]])
+                    result_to_save.append([user_id, game_ids[game_ids_idx], saved+1, ratings[game_ids_idx]])
                     saved += 1
                 game_ids_idx += 1
 
         df_to_save = pd.DataFrame(result_to_save, columns=['user_id', 'game_id', 'rank', 'predicted_rating'])
 
+        self.con.execute(text('TRUNCATE boardgamers.recommend_result'))
         df_to_save.to_sql(
             name='recommend_result',
             con=self.engine,
@@ -126,64 +162,7 @@ class MatirxFactorization:
         )
 
 
-'''
-일부 데이터만 활용하는 DataFrame 제작
-game_count : 평점 수를 기준으로 상위 x개만 알고리즘 실행
-'''
-def make_csr(game_count, con):
-    query = 'SELECT * FROM boardgamers.recommend_review;'
-    data = pd.read_sql(query, con)
-
-    users = data.groupby(['user_id']).count().index.to_list()
-    
-    game_rate_count = data.groupby(['game_id']).count()
-    game_rate_count_sorted = game_rate_count.sort_values('id', ascending=False).index[:game_count].to_list()
-
-    rows, col, rating = [], [], []
-
-    for row in data.itertuples():
-        game_id = getattr(row, 'game_id')
-        if game_id in game_rate_count_sorted:        
-            rows.append(users.index(getattr(row, 'user_id')))
-            col.append(game_rate_count_sorted.index(game_id))
-            rating.append(getattr(row, 'rating'))
-    return csr_matrix((rating, (rows, col))), (users, game_rate_count_sorted)
-
-
-# def make_dataframe(game_count, user_rate_limit, con):
-#     query = 'SELECT * FROM boardgamers.recommend_review;'
-#     data = pd.read_sql(query, con)
-
-#     user_rate_count = data.groupby(['user_id']).count().sort_values('id', ascending=False)
-#     if user_rate_limit:
-#         limit_index = user_rate_count.id.tolist().index(user_rate_limit)
-#     else:
-#         limit_index = user_rate_count.size
-#     user_rate_count = user_rate_count.index[:limit_index]
-#     most_rated = data.groupby(['game_id']).count().sort_values('id', ascending=False).index[:game_count]
-#     most_rated = most_rated.to_list()
-    
-#     df = data.pivot_table(index='user_id', columns='game_id', values='rating')
-
-#     # most_rated에 속한 game들로만 이루어진 DataFrame 생성
-#     column_df = pd.DataFrame(index=df.index, columns=['temp'])
-#     for game in most_rated:
-#         column_df[game] = df[game]
-#     column_df.drop('temp', inplace=True, axis=1)
-    
-#     # user_rate_count에 속한 user들로만 이루어진 DataFrame 생성
-#     if user_rate_limit:
-#         complete_df = pd.DataFrame(index=['temp'], columns=most_rated)
-#         for user in user_rate_count:
-#             complete_df.loc[user] = column_df.loc[user]
-#         complete_df.drop('temp', inplace=True)
-#     # user_rate_limit이 0이라면(작성 리뷰 수 제한이 없다면) 따로 DataFrame을 생성하지 않는다
-#     else:
-#         complete_df = column_df
-#     return complete_df.fillna(0)
-
-
-def update_main(k, learning_rate, iteration, save_size):
+def update_main(game_count, k, learning_rate, iteration, save_size):
     '''
     parameters
     - k : latent factors 수
@@ -191,22 +170,10 @@ def update_main(k, learning_rate, iteration, save_size):
     - iteration : 학습 반복 횟수
     - save_size : 예상 평점 상위 몇 개 저장할지
     '''
-
-    ## password 보안용
-    # config = Config(RepositoryEnv('boardGameRec/algorithms/.env'))
-    # SQL_PWD = config('MYSQL_PASSWORD')
-    SQL_PWD = 'qweasd123*'
-
-    # SQL 서버와 연결
-    engine = create_engine(f'mysql://ssafy:{SQL_PWD}@j5a404.p.ssafy.io/boardgamers')
-    conn_alchemy =  engine.connect()
-
-    # ratings = make_dataframe(1000, 0, conn_alchemy)
-    ratings, matrix = make_csr(1000, conn_alchemy)
-    mf = MatirxFactorization(ratings, k=k, learning_rate=learning_rate, iteration=iteration, save_size=save_size, engine=engine, matrix=matrix)
+    mf = MatirxFactorization(game_count, k, learning_rate, iteration, save_size)
     mf.matrix_factorization()
 
 
 if __name__ == '__main__':
-    update_main(k=9, learning_rate=0.005, iteration=20, save_size=20)
+    update_main(game_count=2000, k=12, learning_rate=0.005, iteration=300, save_size=20)
     
