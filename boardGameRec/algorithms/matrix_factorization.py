@@ -128,7 +128,7 @@ game_count : 평점 수를 기준으로 상위 x개만 알고리즘 실행
 user_rate_limit : 해당 개수 이하의 평점을 매긴 user는 제외
 '''
 def make_dataframe(game_count, user_rate_limit, con):
-    query = 'SELECT * FROM boardgamers.recommend_review;'
+    query = 'SELECT * FROM boardgamers.recommend_review LIMIT 150000, 10000;'
     data = pd.read_sql(query, con)
 
     user_rate_count = data.groupby(['user_id']).count().sort_values('id', ascending=False)
@@ -182,3 +182,8 @@ def update_main(k, learning_rate, iteration, save_size):
     ratings = make_dataframe(1000, 0, conn_alchemy)
     mf = MatirxFactorization(ratings, k=k, learning_rate=learning_rate, iteration=iteration, save_size=save_size, engine=engine)
     mf.matrix_factorization()
+
+
+
+if __name__ == '__main__':
+    update_main(9, 0.005, 100, 20)
