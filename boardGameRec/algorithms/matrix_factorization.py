@@ -81,10 +81,10 @@ class MatirxFactorization:
                 for j in range(csr.indptr[i], csr.indptr[i+1]):
                     r = ratings[j]
 
-                    error = self.prediction(P[i, :], Q[games[j], :], bu[i], bi[games[j]]) - r
+                    error = prediction(P[i, :], Q[games[j], :], bu[i], bi[games[j]]) - r
 
-                    delta_P, delta_bu = self.gradient(error, Q[games[j], :])
-                    delta_Q, delta_bi = self.gradient(error, P[i, :])
+                    delta_P, delta_bu = gradient(self.learning_rate, error, Q[games[j], :])
+                    delta_Q, delta_bi = gradient(self.learning_rate, error, P[i, :])
 
                     P[i, :] -= delta_P
                     bu[i] -= delta_bu
@@ -92,30 +92,22 @@ class MatirxFactorization:
                     Q[games[j], :] -= delta_Q
                     bi[games[j]] -= delta_bi
 
-            print(iter)
-            # print(iter, self.cost(P.dot(Q.T) + bu[:, np.newaxis] + bi[np.newaxis:, ]))
-        
+            print(iter, self.cost(P, Q, bu, bi))
+
         self.result_to_sql(P, Q, bu, bi)
-        self.game_latent_factors_to_sql(Q)
+        self.game_datas_to_sql(Q, bi)
 
 
-    def prediction(self, P, Q, bu, bi):
-        return P.dot(Q.T) + bu + bi
+    def cost(self, P, Q, bu, bi):
+        cost = 0
 
-
-    def gradient(self, error, weight):
-        weight_delta = self.learning_rate * np.dot(weight.T, error)
-        bias_delta = self.learning_rate * np.sum(error)
-        return weight_delta, bias_delta
-
-
-    # def cost(self, prediction):
-    #     R = self.R.to_numpy()
-    #     xi, yi = R.nonzero()
-    #     cost = 0
-    #     for x, y in zip(xi, yi):
-    #         cost += pow(R[x, y] - prediction[x, y], 2)
-    #     return np.sqrt(cost/len(xi))
+        csr = self.csr
+        ratings = csr.data
+        games = csr.indices
+        for i in range(csr.indptr.size-1):
+            for j in range(csr.indptr[i], csr.indptr[i+1]):
+                cost += pow(ratings[j] - prediction(P[i, :], Q[games[j], :], bu[i], bi[games[j]]), 2)
+        return np.sqrt(cost/ratings.size)
 
 
     def result_to_sql(self, P, Q, bu, bi):
@@ -131,7 +123,7 @@ class MatirxFactorization:
                 user_start += 1
 
         for i in range(user_index, len(self.users)):
-            user_result = self.prediction(P[i, :], Q, bu[i], bi)
+            user_result = prediction(P[i, :], Q, bu[i], bi)
             user_id = self.users[i]
             
             games_rated = []
@@ -163,7 +155,7 @@ class MatirxFactorization:
         )
 
 
-    def game_latent_factors_to_sql(self, Q):
+    def game_datas_to_sql(self, Q, bi):
         weights_to_save = []
         for i in range(len(self.games)):
             for j in range(self.k):
@@ -179,6 +171,30 @@ class MatirxFactorization:
             index=False
         )
 
+        bias_to_save = []
+        for i in range(len(self.games)):
+            bias_to_save.append([self.games[i], bi[i]])
+
+        df_bias_to_save = pd.DataFrame(bias_to_save, columns=['game_id', 'bias'])
+
+        self.con.execute(text('TRUNCATE boardgamers.recommend_game_bias'))
+        df_bias_to_save.to_sql(
+            name='recommend_game_bias',
+            con=self.engine,
+            if_exists='append',
+            index=False
+        )
+
+
+def prediction(P, Q, bu, bi):
+    return P.dot(Q.T) + bu + bi
+
+
+def gradient(learning_rate, error, weight):
+    weight_delta = learning_rate * np.dot(weight.T, error)
+    bias_delta = learning_rate * np.sum(error)
+    return weight_delta, bias_delta
+
 
 def update_main(game_count, k, learning_rate, iteration, save_size):
     '''
@@ -193,5 +209,5 @@ def update_main(game_count, k, learning_rate, iteration, save_size):
 
 
 if __name__ == '__main__':
-    update_main(game_count=1000, k=3, learning_rate=0.005, iteration=5, save_size=20)
+    update_main(game_count=5000, k=12, learning_rate=0.005, iteration=100, save_size=20)
     
