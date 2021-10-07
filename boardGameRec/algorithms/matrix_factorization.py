@@ -10,10 +10,9 @@ pymysql.install_as_MySQLdb()
 class MatirxFactorization:
 
     def __init__(self, game_count, k, learning_rate, iteration, save_size):
-        ## password 보안용
-        # config = Config(RepositoryEnv('boardGameRec/algorithms/.env'))
-        # SQL_PWD = config('MYSQL_PASSWORD')
-        SQL_PWD = 'qweasd123*'
+        # password 보안용
+        config = Config(RepositoryEnv('boardGameRec/algorithms/.env'))
+        SQL_PWD = config('MYSQL_PASSWORD')
 
         # SQL 서버와 연결
         self.engine = create_engine(f'mysql://ssafy:{SQL_PWD}@j5a404.p.ssafy.io/boardgamers')
