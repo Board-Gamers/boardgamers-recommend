@@ -91,7 +91,7 @@ class MatirxFactorization:
                     Q[games[j], :] -= delta_Q
                     bi[games[j]] -= delta_bi
 
-            print(iter, self.cost(P, Q, bu, bi))
+            # print(iter, self.cost(P, Q, bu, bi))
 
         self.result_to_sql(P, Q, bu, bi)
         self.game_datas_to_sql(Q, bi)
