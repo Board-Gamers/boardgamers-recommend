@@ -9,10 +9,9 @@ from .matrix_factorization import prediction, gradient
 class ShortMatrixFactorization:
 
     def __init__(self, user_id, learning_rate, iteration, save_size):
-        ## password 보안용
-        # config = Config(RepositoryEnv('boardGameRec/algorithms/.env'))
-        # SQL_PWD = config('MYSQL_PASSWORD')
-        SQL_PWD = 'qweasd123*'
+        # password 보안용
+        config = Config(RepositoryEnv('boardGameRec/algorithms/.env'))
+        SQL_PWD = config('MYSQL_PASSWORD')
 
         self.user_id = user_id + 1000000
         self.engine = create_engine(f'mysql://ssafy:{SQL_PWD}@j5a404.p.ssafy.io/boardgamers')
