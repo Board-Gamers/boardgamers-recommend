@@ -30,12 +30,12 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
 ]
 
-# CORS_ALLOW_ALL_ORIGINS = True
-CORS_ORIGIN_WHITELIST = [
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-    'http://j5a404.p.ssafy.io',
-]
+CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ORIGIN_WHITELIST = [
+#     'http://127.0.0.1:8000',
+#     'http://localhost:8000',
+#     'http://j5a404.p.ssafy.io',
+# ]
 
 # Application definition
 
