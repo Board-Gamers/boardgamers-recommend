@@ -208,5 +208,5 @@ def update_main(game_count, k, learning_rate, iteration, save_size):
 
 
 if __name__ == '__main__':
-    update_main(game_count=2000, k=15, learning_rate=0.005, iteration=5000, save_size=20)
+    update_main(game_count=2000, k=12, learning_rate=0.005, iteration=1500, save_size=20)
     
